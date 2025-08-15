@@ -118,7 +118,9 @@ export type EneoFn<T> = PromisifyFn<T> & {
         ? V
         : ReturnType<T> extends AsyncGenerator<infer W>
           ? W
-          : never
+          : never,
+    void,
+    unknown
   >
 }
 

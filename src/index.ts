@@ -111,7 +111,7 @@ export type EneoFn<T> = PromisifyFn<T> & {
    */
   asAsyncIter: (
     ...args: ArgumentsType<T>
-  ) => AsyncIterable<
+  ) => AsyncGenerator<
     ReturnType<T> extends ReadableStream<infer U>
       ? U
       : ReturnType<T> extends AsyncIterable<infer V>

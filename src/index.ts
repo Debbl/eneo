@@ -5,7 +5,7 @@ export type PromisifyFn<T> =
     ? T
     : (...args: ArgumentsType<T>) => Promise<Awaited<ReturnType<T>>>
 
-export type PariResolver = (
+export type EneoResolver = (
   name: string,
   resolved: (...args: unknown[]) => unknown,
 ) => ((...args: unknown[]) => unknown) | undefined
@@ -60,7 +60,7 @@ export interface EventOptions<Remote> {
    *
    * For advanced use cases only
    */
-  resolver?: PariResolver
+  resolver?: EneoResolver
 
   /**
    * Custom error handler
@@ -99,9 +99,9 @@ export interface EventOptions<Remote> {
   onTimeoutError?: (functionName: string, args: any[]) => boolean | void
 }
 
-export type PariOptions<Remote> = EventOptions<Remote> & ChannelOptions
+export type EneoOptions<Remote> = EventOptions<Remote> & ChannelOptions
 
-export type PariFn<T> = PromisifyFn<T> & {
+export type EneoFn<T> = PromisifyFn<T> & {
   /**
    * Send event without asking for response
    */
@@ -112,7 +112,7 @@ export type PariFn<T> = PromisifyFn<T> & {
   asAsyncIter: (...args: ArgumentsType<T>) => ReturnType<T>
 }
 
-export interface PariGroupFn<T> {
+export interface EneoGroupFn<T> {
   /**
    * Call the remote function and wait for the result.
    */
@@ -123,11 +123,11 @@ export interface PariGroupFn<T> {
   asEvent: (...args: ArgumentsType<T>) => void
 }
 
-export type PariReturn<
+export type EneoReturn<
   RemoteFunctions,
   LocalFunctions = Record<string, never>,
 > = {
-  [K in keyof RemoteFunctions]: PariFn<RemoteFunctions[K]>
+  [K in keyof RemoteFunctions]: EneoFn<RemoteFunctions[K]>
 } & {
   $functions: LocalFunctions
   $close: (error?: Error) => void
@@ -139,20 +139,20 @@ type PendingCallHandler = (
   options: Pick<PromiseEntry, 'method' | 'reject'>,
 ) => void | Promise<void>
 
-export type PariGroupReturn<RemoteFunctions> = {
-  [K in keyof RemoteFunctions]: PariGroupFn<RemoteFunctions[K]>
+export type EneoGroupReturn<RemoteFunctions> = {
+  [K in keyof RemoteFunctions]: EneoGroupFn<RemoteFunctions[K]>
 }
 
-export interface PariGroup<
+export interface EneoGroup<
   RemoteFunctions,
   LocalFunctions = Record<string, never>,
 > {
-  readonly clients: PariReturn<RemoteFunctions, LocalFunctions>[]
+  readonly clients: EneoReturn<RemoteFunctions, LocalFunctions>[]
   readonly functions: LocalFunctions
-  readonly broadcast: PariGroupReturn<RemoteFunctions>
+  readonly broadcast: EneoGroupReturn<RemoteFunctions>
   updateChannels: (
     fn?: (channels: ChannelOptions[]) => void,
-  ) => PariReturn<RemoteFunctions, LocalFunctions>[]
+  ) => EneoReturn<RemoteFunctions, LocalFunctions>[]
 }
 
 interface PromiseEntry {
@@ -220,13 +220,13 @@ const defaultDeserialize = defaultSerialize
 const { clearTimeout, setTimeout } = globalThis
 const random = Math.random.bind(Math)
 
-export function createPari<
+export function createEneo<
   RemoteFunctions = Record<string, never>,
   LocalFunctions extends object = Record<string, never>,
 >(
   functions: LocalFunctions,
-  options: PariOptions<RemoteFunctions>,
-): PariReturn<RemoteFunctions, LocalFunctions> {
+  options: EneoOptions<RemoteFunctions>,
+): EneoReturn<RemoteFunctions, LocalFunctions> {
   const {
     post,
     on,
@@ -258,7 +258,7 @@ export function createPari<
 
         if (method === '$closed') return closed
 
-        // catch if "createPari" is returned from async function
+        // catch if "createEneo" is returned from async function
         if (
           method === 'then' &&
           !eventNames.includes('then' as any) &&
@@ -277,7 +277,7 @@ export function createPari<
         const sendCall = async (...args: any[]) => {
           id = nanoid()
           if (closed)
-            throw new Error(`[Pari] rpc is closed, cannot call "${method}"`)
+            throw new Error(`[Eneo] rpc is closed, cannot call "${method}"`)
           if (_promise) {
             // Wait if `on` is promise
             try {
@@ -295,7 +295,7 @@ export function createPari<
                   // Custom onTimeoutError handler can throw its own error too
                   const handleResult = options.onTimeoutError?.(method, args)
                   if (handleResult !== true)
-                    throw new Error(`[Pari] timeout on calling "${method}"`)
+                    throw new Error(`[Eneo] timeout on calling "${method}"`)
                 } catch (e) {
                   reject(e)
                 }
@@ -343,7 +343,7 @@ export function createPari<
             while (buffer.length) {
               const { done, value, error } = buffer.shift()!
               if (typeof done === 'undefined')
-                throw new Error('[Pari] function return is not async iterable')
+                throw new Error('[Eneo] function return is not async iterable')
               if (error) throw error
               if (done) return
               yield value
@@ -359,12 +359,12 @@ export function createPari<
         return sendCall
       },
     },
-  ) as PariReturn<RemoteFunctions, LocalFunctions>
+  ) as EneoReturn<RemoteFunctions, LocalFunctions>
 
   function close(customError?: Error) {
     closed = true
     rpcPromiseMap.forEach(({ reject, method }) => {
-      const error = new Error(`[Pari] rpc is closed, cannot call "${method}"`)
+      const error = new Error(`[Eneo] rpc is closed, cannot call "${method}"`)
 
       if (customError) {
         customError.cause ??= error
@@ -382,7 +382,7 @@ export function createPari<
 
     const handlerResults = entries.map(({ method, reject }) => {
       if (!handler) {
-        return reject(new Error(`[Pari]: rejected pending call "${method}".`))
+        return reject(new Error(`[Eneo]: rejected pending call "${method}".`))
       }
 
       return handler({ method, reject })
@@ -412,7 +412,7 @@ export function createPari<
 
       let isAsyncIter = false
       if (!fn) {
-        error = new Error(`[Pari] function "${method}" not found`)
+        error = new Error(`[Eneo] function "${method}" not found`)
       } else {
         try {
           result = await fn.apply(bind === 'rpc' ? rpc : functions, args)
@@ -527,18 +527,18 @@ export function cachedMap<T, R>(items: T[], fn: (i: T) => R): R[] {
   })
 }
 
-export function createPariGroup<
+export function createEneoGroup<
   RemoteFunctions = Record<string, never>,
   LocalFunctions extends object = Record<string, never>,
 >(
   functions: LocalFunctions,
   channels: ChannelOptions[] | (() => ChannelOptions[]),
   options: EventOptions<RemoteFunctions> = {},
-): PariGroup<RemoteFunctions, LocalFunctions> {
+): EneoGroup<RemoteFunctions, LocalFunctions> {
   const getChannels = () =>
     typeof channels === 'function' ? channels() : channels
   const getClients = (channels = getChannels()) =>
-    cachedMap(channels, (s) => createPari(functions, { ...options, ...s }))
+    cachedMap(channels, (s) => createEneo(functions, { ...options, ...s }))
 
   const broadcastProxy = new Proxy(
     {},
@@ -555,7 +555,7 @@ export function createPariGroup<
         return sendCall
       },
     },
-  ) as PariGroupReturn<RemoteFunctions>
+  ) as EneoGroupReturn<RemoteFunctions>
 
   function updateChannels(fn?: (channels: ChannelOptions[]) => void) {
     const channels = getChannels()

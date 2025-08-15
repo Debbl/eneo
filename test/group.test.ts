@@ -1,6 +1,6 @@
 import { MessageChannel } from 'node:worker_threads'
 import { expect, it } from 'vitest'
-import { createPari, createPariGroup } from '../src'
+import { createEneo, createEneoGroup } from '../src'
 import * as Alice from './alice'
 import * as Bob from './bob'
 
@@ -12,23 +12,23 @@ it('group', async () => {
   const channel2 = new MessageChannel()
   const channel3 = new MessageChannel()
 
-  const client1 = createPari<AliceFunctions, BobFunctions>(Bob, {
+  const client1 = createEneo<AliceFunctions, BobFunctions>(Bob, {
     post: (data) => channel1.port1.postMessage(data),
     on: async (fn) => {
       await new Promise((resolve) => setTimeout(resolve, 100))
       channel1.port1.on('message', fn)
     },
   })
-  const client2 = createPari<AliceFunctions, BobFunctions>(Bob, {
+  const client2 = createEneo<AliceFunctions, BobFunctions>(Bob, {
     post: (data) => channel2.port1.postMessage(data),
     on: (fn) => channel2.port1.on('message', fn),
   })
-  const client3 = createPari<AliceFunctions, BobFunctions>(Bob, {
+  const client3 = createEneo<AliceFunctions, BobFunctions>(Bob, {
     post: (data) => channel3.port1.postMessage(data),
     on: (fn) => channel3.port1.on('message', fn),
   })
 
-  const server = createPariGroup<BobFunctions, AliceFunctions>(
+  const server = createEneoGroup<BobFunctions, AliceFunctions>(
     Alice,
     [
       {

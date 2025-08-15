@@ -1,6 +1,6 @@
 import { MessageChannel } from 'node:worker_threads'
 import { expect, it } from 'vitest'
-import { createPari } from '../src'
+import { createEneo } from '../src'
 import * as Alice from './alice'
 import * as Bob from './bob'
 
@@ -12,7 +12,7 @@ it('on function error', async () => {
 
   let error: any
 
-  const _bob = createPari<AliceFunctions, BobFunctions>(
+  const _bob = createEneo<AliceFunctions, BobFunctions>(
     { ...Bob },
     {
       post: (data) => channel.port1.postMessage(data),
@@ -23,7 +23,7 @@ it('on function error', async () => {
     },
   )
 
-  const alice = createPari<BobFunctions, AliceFunctions>(
+  const alice = createEneo<BobFunctions, AliceFunctions>(
     { ...Alice },
     {
       // mark bob's `bump` as an event without response
@@ -43,7 +43,7 @@ it('on function error', async () => {
       "args": [
         "Bob",
       ],
-      "err": [Error: [Pari] function "foo" not found],
+      "err": [Error: [Eneo] function "foo" not found],
       "method": "foo",
     }
   `)
@@ -54,7 +54,7 @@ it('on serialize error', async () => {
 
   let error: any
 
-  const _bob = createPari<AliceFunctions, BobFunctions>(
+  const _bob = createEneo<AliceFunctions, BobFunctions>(
     { ...Bob },
     {
       serialize: (d) => {
@@ -70,7 +70,7 @@ it('on serialize error', async () => {
     },
   )
 
-  const alice = createPari<BobFunctions, AliceFunctions>(
+  const alice = createEneo<BobFunctions, AliceFunctions>(
     { ...Alice },
     {
       // mark bob's `bump` as an event without response
@@ -100,7 +100,7 @@ it('on parse error', async () => {
 
   let error: any
 
-  const _bob = createPari<AliceFunctions, BobFunctions>(
+  const _bob = createEneo<AliceFunctions, BobFunctions>(
     { ...Bob },
     {
       deserialize: () => {
@@ -115,7 +115,7 @@ it('on parse error', async () => {
     },
   )
 
-  const alice = createPari<BobFunctions, AliceFunctions>(
+  const alice = createEneo<BobFunctions, AliceFunctions>(
     { ...Alice },
     {
       // mark bob's `bump` as an event without response

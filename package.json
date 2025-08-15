@@ -3,19 +3,19 @@
   "type": "module",
   "version": "0.0.1",
   "packageManager": "pnpm@10.14.0",
-  "description": "pari",
+  "description": "A simple RPC library for Node.js",
   "author": "Brendan Dash <me@aiwan.run> (https://aiwan.run)",
   "license": "MIT",
-  "homepage": "https://github.com/Debbl/pari#readme",
+  "homepage": "https://github.com/Debbl/eneo#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Debbl/pari.git"
+    "url": "git+https://github.com/Debbl/eneo.git"
   },
-  "bugs": "https://github.com/Debbl/pari/issues",
+  "bugs": "https://github.com/Debbl/eneo/issues",
   "keywords": [
     "rpc",
     "birpc",
-    "pari"
+    "eneo"
   ],
   "exports": {
     ".": "./dist/index.js",

@@ -1,6 +1,6 @@
 import { MessageChannel } from 'node:worker_threads'
 import { expect, it } from 'vitest'
-import { createPari } from '../src'
+import { createEneo } from '../src'
 import * as Alice from './alice'
 import * as Bob from './bob'
 
@@ -10,7 +10,7 @@ type AliceFunctions = typeof Alice
 it('resolver', async () => {
   const channel = new MessageChannel()
 
-  const bob = createPari<AliceFunctions, BobFunctions>(
+  const bob = createEneo<AliceFunctions, BobFunctions>(
     { ...Bob },
     {
       post: (data) => channel.port1.postMessage(data),
@@ -20,7 +20,7 @@ it('resolver', async () => {
 
   let customResolverFn: ((...args: any[]) => any) | undefined
 
-  const alice = createPari<BobFunctions, AliceFunctions>(
+  const alice = createEneo<BobFunctions, AliceFunctions>(
     { ...Alice },
     {
       // mark bob's `bump` as an event without response
@@ -40,7 +40,7 @@ it('resolver', async () => {
 
   // @ts-expect-error `foo` is not defined
   await expect(bob.foo('Bob')).rejects.toThrow(
-    '[Pari] function "foo" not found',
+    '[Eneo] function "foo" not found',
   )
 
   customResolverFn = (a: string) => `Custom resolve function to ${a}`

@@ -1,10 +1,10 @@
 import { nextTick } from 'node:process'
 import { expect, it } from 'vitest'
-import { createPari } from '../src'
+import { createEneo } from '../src'
 
 it('stops the rpc promises', async () => {
   expect.assertions(2)
-  const rpc = createPari<{ hello: () => string }>(
+  const rpc = createEneo<{ hello: () => string }>(
     {},
     {
       on() {},
@@ -17,7 +17,7 @@ it('stops the rpc promises', async () => {
     },
     (err) => {
       // Promise should reject
-      expect(err.message).toBe('[Pari] rpc is closed, cannot call "hello"')
+      expect(err.message).toBe('[Eneo] rpc is closed, cannot call "hello"')
     },
   )
   nextTick(() => {
@@ -25,13 +25,13 @@ it('stops the rpc promises', async () => {
   })
   await promise
   await expect(() => rpc.hello()).rejects.toThrow(
-    '[Pari] rpc is closed, cannot call "hello"',
+    '[Eneo] rpc is closed, cannot call "hello"',
   )
 })
 
 it('stops the rpc promises with a custom message', async () => {
   expect.assertions(2)
-  const rpc = createPari<{ hello: () => string }>(
+  const rpc = createEneo<{ hello: () => string }>(
     {},
     {
       on() {},
@@ -48,7 +48,7 @@ it('stops the rpc promises with a custom message', async () => {
 
       // Original error should be present
       expect(err.cause.message).toBe(
-        '[Pari] rpc is closed, cannot call "hello"',
+        '[Eneo] rpc is closed, cannot call "hello"',
       )
     },
   )
@@ -60,7 +60,7 @@ it('stops the rpc promises with a custom message', async () => {
 
 it("custom error's cause is not overwritten", async () => {
   expect.assertions(2)
-  const rpc = createPari<{ hello: () => string }>(
+  const rpc = createEneo<{ hello: () => string }>(
     {},
     {
       on() {},

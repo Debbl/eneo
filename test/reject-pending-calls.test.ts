@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest'
-import { createPari } from '../src'
+import { createEneo } from '../src'
 
 it('rejects pending calls', async () => {
-  const rpc = createPari<{
+  const rpc = createEneo<{
     first: () => Promise<void>
     second: () => Promise<void>
   }>(
@@ -31,12 +31,12 @@ it('rejects pending calls', async () => {
   const errors = await Promise.all(promises)
   expect(errors).toHaveLength(2)
 
-  expect.soft(errors[0].message).toBe('[Pari]: rejected pending call "first".')
-  expect.soft(errors[1].message).toBe('[Pari]: rejected pending call "second".')
+  expect.soft(errors[0].message).toBe('[Eneo]: rejected pending call "first".')
+  expect.soft(errors[1].message).toBe('[Eneo]: rejected pending call "second".')
 })
 
 it('rejects pending calls with custom handler', async () => {
-  const rpc = createPari<{
+  const rpc = createEneo<{
     first: () => Promise<void>
     second: () => Promise<void>
   }>(
@@ -72,7 +72,7 @@ it('rejects pending calls with custom handler', async () => {
 })
 
 it('rejected calls are cleared from rpc', async () => {
-  const rpc = createPari<{ stuck: () => Promise<void> }>(
+  const rpc = createEneo<{ stuck: () => Promise<void> }>(
     {},
     {
       on() {},

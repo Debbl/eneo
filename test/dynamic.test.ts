@@ -1,6 +1,6 @@
 import { MessageChannel } from 'node:worker_threads'
 import { expect, it } from 'vitest'
-import { createPari } from '../src'
+import { createEneo } from '../src'
 import * as Alice from './alice'
 import * as Bob from './bob'
 
@@ -10,7 +10,7 @@ type AliceFunctions = typeof Alice
 it('dynamic', async () => {
   const channel = new MessageChannel()
 
-  const bob = createPari<AliceFunctions, BobFunctions>(
+  const bob = createEneo<AliceFunctions, BobFunctions>(
     { ...Bob },
     {
       post: (data) => channel.port1.postMessage(data),
@@ -18,7 +18,7 @@ it('dynamic', async () => {
     },
   )
 
-  const alice = createPari<BobFunctions, AliceFunctions>(
+  const alice = createEneo<BobFunctions, AliceFunctions>(
     { ...Alice },
     {
       // mark bob's `bump` as an event without response

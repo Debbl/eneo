@@ -109,7 +109,17 @@ export type EneoFn<T> = PromisifyFn<T> & {
   /**
    * Call fn as async iterator
    */
-  asAsyncIter: (...args: ArgumentsType<T>) => ReturnType<T>
+  asAsyncIter: (
+    ...args: ArgumentsType<T>
+  ) => AsyncIterable<
+    ReturnType<T> extends ReadableStream<infer U>
+      ? U
+      : ReturnType<T> extends AsyncIterable<infer V>
+        ? V
+        : ReturnType<T> extends AsyncGenerator<infer W>
+          ? W
+          : never
+  >
 }
 
 export interface EneoGroupFn<T> {

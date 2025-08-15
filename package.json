@@ -1,7 +1,7 @@
 {
   "name": "eneo",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "packageManager": "pnpm@10.14.0",
   "description": "A simple RPC library for Node.js",
   "author": "Brendan Dash <me@aiwan.run> (https://aiwan.run)",

@@ -56,6 +56,19 @@ export interface EventOptions<Remote> {
   timeout?: number
 
   /**
+   * Hook triggered before an event is sent to the remote
+   *
+   * @param req - Request parameters
+   * @param next - Function to continue the request
+   * @param resolve - Function to resolve the response directly
+   */
+  onRequest?: (
+    req: Request,
+    next: (req?: Request) => Promise<any>,
+    resolve: (res: any) => void,
+  ) => void | Promise<void>
+
+  /**
    * Custom resolver to resolve function to be called
    *
    * For advanced use cases only
@@ -253,7 +266,7 @@ export function createEneo<
 
   const rpcPromiseMap = new Map<string, PromiseEntry>()
 
-  let _promise: Promise<any> | any
+  let _promiseInit: Promise<any> | any
   let closed = false
 
   const rpc = new Proxy(
@@ -292,18 +305,22 @@ export function createEneo<
           id = nanoid()
           if (closed)
             throw new Error(`[Eneo] rpc is closed, cannot call "${method}"`)
-          if (_promise) {
+          if (_promiseInit) {
             // Wait if `on` is promise
             try {
-              await _promise
+              await _promiseInit
             } finally {
               // don't keep resolved promise hanging
-              _promise = undefined
+              _promiseInit = undefined
             }
           }
 
-          // eslint-disable-next-line no-async-promise-executor
-          return new Promise(async (resolve, reject) => {
+          // eslint-disable-next-line prefer-const
+          let { promise, resolve, reject } = createPromiseWithResolvers<any>()
+          let timeoutId: ReturnType<typeof setTimeout> | undefined
+          const _req: Request = { m: method, a: args, i: id, t: TYPE_REQUEST }
+
+          async function handler(req: Request = _req) {
             let timeoutId: ReturnType<typeof setTimeout> | undefined
             if (timeout >= 0) {
               timeoutId = setTimeout(() => {
@@ -330,17 +347,26 @@ export function createEneo<
               ...rpcPromiseMap.get(id),
             })
 
-            try {
-              await post(
-                serialize(<Request>{ m: method, a: args, i: id, t: 'q' }),
-              )
-            } catch (e) {
-              clearTimeout(timeoutId)
-              rpcPromiseMap.delete(id)
-              if (options.onGeneralError?.(e as Error, method, args) !== true)
-                reject(e)
+            await post(serialize(req))
+            return promise
+          }
+
+          try {
+            if (options.onRequest) {
+              await options.onRequest(_req, handler, resolve)
+            } else {
+              await handler()
             }
-          })
+          } catch (e) {
+            clearTimeout(timeoutId)
+            rpcPromiseMap.delete(id)
+            if (options.onGeneralError?.(e as Error) !== true) {
+              throw e
+            }
+            return
+          }
+
+          return promise
         }
 
         async function* asyncIterWrapper() {
@@ -535,7 +561,7 @@ export function createEneo<
     }
   }
 
-  _promise = on(onMessage)
+  _promiseInit = on(onMessage)
 
   return rpc
 }
@@ -603,6 +629,20 @@ export function createEneoGroup<
     // @ts-expect-error deprecated
     boardcast: broadcastProxy,
   }
+}
+
+function createPromiseWithResolvers<T>(): {
+  promise: Promise<T>
+  resolve: (value: T | PromiseLike<T>) => void
+  reject: (reason?: any) => void
+} {
+  let resolve: (value: T | PromiseLike<T>) => void
+  let reject: (reason?: any) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve: resolve!, reject: reject! }
 }
 
 // port from nanoid

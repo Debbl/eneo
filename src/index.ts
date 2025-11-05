@@ -105,7 +105,7 @@ export type EneoFn<T> = PromisifyFn<T> & {
   /**
    * Send event without asking for response
    */
-  asEvent: (...args: ArgumentsType<T>) => void
+  asEvent: (...args: ArgumentsType<T>) => Promise<void>
   /**
    * Call fn as async iterator
    */
@@ -132,7 +132,7 @@ export interface EneoGroupFn<T> {
   /**
    * Send event without asking for response
    */
-  asEvent: (...args: ArgumentsType<T>) => void
+  asEvent: (...args: ArgumentsType<T>) => Promise<void>
 }
 
 export type EneoReturn<
@@ -278,8 +278,10 @@ export function createEneo<
         )
           return undefined
 
-        const sendEvent = (...args: any[]) => {
-          post(serialize(<Request>{ m: method, a: args, t: TYPE_REQUEST }))
+        const sendEvent = async (...args: any[]) => {
+          await post(
+            serialize(<Request>{ m: method, a: args, t: TYPE_REQUEST }),
+          )
         }
         if (eventNames.includes(method as any)) {
           sendEvent.asEvent = sendEvent
@@ -299,7 +301,9 @@ export function createEneo<
               _promise = undefined
             }
           }
-          const callPromise = new Promise((resolve, reject) => {
+
+          // eslint-disable-next-line no-async-promise-executor
+          return new Promise(async (resolve, reject) => {
             let timeoutId: ReturnType<typeof setTimeout> | undefined
             if (timeout >= 0) {
               timeoutId = setTimeout(() => {
@@ -325,9 +329,18 @@ export function createEneo<
               method,
               ...rpcPromiseMap.get(id),
             })
-            post(serialize(<Request>{ m: method, a: args, i: id, t: 'q' }))
+
+            try {
+              await post(
+                serialize(<Request>{ m: method, a: args, i: id, t: 'q' }),
+              )
+            } catch (e) {
+              clearTimeout(timeoutId)
+              rpcPromiseMap.delete(id)
+              if (options.onGeneralError?.(e as Error, method, args) !== true)
+                reject(e)
+            }
           })
-          return callPromise
         }
 
         async function* asyncIterWrapper() {
@@ -473,7 +486,7 @@ export function createEneo<
         // Send data
         if (!error) {
           try {
-            post(
+            await post(
               serialize(<Response>{
                 t: TYPE_RESPONSE,
                 i: msg.i,
@@ -491,7 +504,7 @@ export function createEneo<
         }
         // Try to send error if serialization failed
         try {
-          post(
+          await post(
             serialize(<Response>{ t: TYPE_RESPONSE, i: msg.i, e: error }),
             ...extra,
           )
@@ -561,8 +574,8 @@ export function createEneoGroup<
         const sendCall = (...args: any[]) => {
           return Promise.all(callbacks.map((i) => i(...args)))
         }
-        sendCall.asEvent = (...args: any[]) => {
-          callbacks.map((i) => i.asEvent(...args))
+        sendCall.asEvent = async (...args: any[]) => {
+          await Promise.all(callbacks.map((i) => i.asEvent(...args)))
         }
         return sendCall
       },
